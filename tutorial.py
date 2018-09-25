@@ -26,7 +26,10 @@ def get_graph(**options):
         extract_fablabs,
         bonobo.Limit(10),
         bonobo.CsvWriter('output.csv'),
+        _name='extract'
     )
+    # graph.add_chain(bonobo.CsvWriter('output.csv'), _input='extract')
+    graph.add_chain(bonobo.PrettyPrinter(), _input=1)
 
     return graph
 
