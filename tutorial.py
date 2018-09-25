@@ -1,23 +1,11 @@
 import bonobo
+import requests
 
 
-def extract():
-    """Placeholder, change, rename, remove... """
-    data_source = ["hello", "world", "do something"]
-    for data in data_source:
-        yield data
+FABLABS_API_URL = 'https://public-us.opendatasoft.com/api/records/1.0/search/?dataset=fablabs&rows=1000'
 
-
-def transform(*args):
-    """Placeholder, change, rename, remove... """
-    yield tuple(
-        map(str.title, args)
-    )
-
-
-def load(*args):
-    """Placeholder, change, rename, remove... """
-    print(*args)
+def extract_fablabs():
+    yield from requests.get(FABLABS_API_URL).json().get('records')
 
 
 def get_graph(**options):
@@ -28,7 +16,11 @@ def get_graph(**options):
 
     """
     graph = bonobo.Graph()
-    graph.add_chain(extract, transform, load)
+    graph.add_chain(
+        extract_fablabs,
+        bonobo.Limit(10),
+        bonobo.PrettyPrinter(),
+    )
 
     return graph
 
