@@ -1,4 +1,5 @@
 import bonobo
+from bonobo.config import use_context_processor
 import requests
 
 
@@ -9,12 +10,22 @@ def extract_fablabs():
     yield from requests.get(FABLABS_API_URL).json().get('records')
 
 
+def with_opened_file(self, context):
+    with context.get_service('fs').open('ouput.txt', 'w+') as f:
+        yield f
+
+
+@use_context_processor(with_opened_file)
+def write_repr_to_file(f, *row):
+    f.write(repr(row) + "\n")
+
+
 def get_graph(**options):
     graph = bonobo.Graph()
     graph.add_chain(
         extract_fablabs,
         bonobo.Limit(10),
-        bonobo.PrettyPrinter(),
+        write_repr_to_file,
     )
 
     return graph
