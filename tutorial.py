@@ -25,7 +25,7 @@ def get_graph(**options):
     graph.add_chain(
         extract_fablabs,
         bonobo.Limit(10),
-        write_repr_to_file,
+        bonobo.CsvWriter('output.csv'),
     )
 
     return graph
