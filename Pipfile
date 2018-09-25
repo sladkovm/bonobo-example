@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 bonobo = "*"
 requests = "*"
+requests-cache = "*"
 
 [dev-packages]
 

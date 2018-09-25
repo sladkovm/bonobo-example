@@ -1,13 +1,14 @@
 import bonobo
-from bonobo.config import use_context_processor
+from bonobo.config import use_context_processor, use
 import requests
 
 
 FABLABS_API_URL = 'https://public-us.opendatasoft.com/api/records/1.0/search/?dataset=fablabs&rows=1000'
 
 
-def extract_fablabs():
-    yield from requests.get(FABLABS_API_URL).json().get('records')
+@use('http')
+def extract_fablabs(http):
+    yield from http.get(FABLABS_API_URL).json().get('records')
 
 
 def with_opened_file(self, context):
@@ -34,13 +35,23 @@ def get_graph(**options):
     return graph
 
 
-def get_services(**options):
-    return {}
+def get_services(use_cache=False, **options):
+    if use_cache:
+        from requests_cache import CachedSession
+        http = CachedSession('http.cache')
+    else:
+        import requests
+        http = requests.Session()
+        http.headers = {'User-Agent': 'Monkeys!'}
+    return {
+        'http': http
+    }
 
 
 # The __main__ block actually execute the graph.
 if __name__ == '__main__':
     parser = bonobo.get_argument_parser()
+    parser.add_argument('--use-cache', action='store_true', default=False)
     with bonobo.parse_args(parser) as options:
         bonobo.run(
             get_graph(**options),
