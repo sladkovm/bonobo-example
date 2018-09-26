@@ -24,10 +24,14 @@ def extract_matches(fb):
         yield m
 
 
-def extract_ids(fb):
+def filter_matches(m):
+    if m['activityType'] == 'Ride':
+        yield m
+
+
+def extract_ids(m):
     """Extract relevant ids"""
-    for id in fb.ids:
-        yield id
+    yield m['id']
 
 
 def extract_power(id):
@@ -49,17 +53,21 @@ def get_graph(**options):
     trunk['flyby'] = graph.add_chain(extract_flyby)
     trunk['matches'] = graph.add_chain(extract_matches,
                                        _input=trunk['flyby'].output)
-    trunk['json matches'] = graph.add_chain(bonobo.JsonWriter('matches.json'),
+    trunk['filtered matches'] = graph.add_chain(filter_matches,
                                              _input=trunk['matches'].output)
+    trunk['json matches'] = graph.add_chain(bonobo.JsonWriter('matches.json'),
+                                             _input=trunk['filtered matches'].output)
     trunk['ids'] = graph.add_chain(extract_ids,
-                                   _input=trunk['flyby'].output)
-    trunk['print ids'] = graph.add_chain(bonobo.PrettyPrinter(),
-                                         _input=trunk['ids'].output)
+                                   _input=trunk['filtered matches'].output)
+    # trunk['print ids'] = graph.add_chain(bonobo.PrettyPrinter(),
+    #                                      _input=trunk['ids'].output)
     trunk['json ids'] = graph.add_chain(bonobo.JsonWriter('flyby-ids.json'),
                                              _input=trunk['ids'].output)
     trunk['power'] = graph.add_chain(retrieve_power, _input=trunk['ids'].output)
     trunk['print power'] = graph.add_chain(bonobo.PrettyPrinter(),
                                            _input=trunk['power'].output)
+    trunk['json power'] = graph.add_chain(bonobo.JsonWriter('flyby-power.json'),
+                                             _input=trunk['power'].output)
 
     return graph
 
