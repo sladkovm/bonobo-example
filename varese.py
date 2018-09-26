@@ -19,6 +19,12 @@ def extract_matches(fb):
         yield m
 
 
+def extract_ids(fb):
+    """Extract relevant ids"""
+    for id in fb.ids:
+        yield id
+
+
 def get_graph(**options):
     """
     This function builds the graph that needs to be executed.
@@ -27,12 +33,17 @@ def get_graph(**options):
 
     """
     graph = bonobo.Graph()
-    trunk['matches'] = graph.add_chain(extract_flyby,
-                                       extract_matches)
-    trunk['print matches'] = graph.add_chain(bonobo.PrettyPrinter(),
-                                             _input=trunk['matches'].output)
+    trunk['flyby'] = graph.add_chain(extract_flyby)
+    trunk['matches'] = graph.add_chain(extract_matches,
+                                       _input=trunk['flyby'].output)
     trunk['json matches'] = graph.add_chain(bonobo.JsonWriter('matches.json'),
                                              _input=trunk['matches'].output)
+    trunk['ids'] = graph.add_chain(extract_ids,
+                                   _input=trunk['flyby'].output)
+    trunk['print ids'] = graph.add_chain(bonobo.PrettyPrinter(),
+                                         _input=trunk['ids'].output)
+    trunk['json ids'] = graph.add_chain(bonobo.JsonWriter('flyby-ids.json'),
+                                             _input=trunk['ids'].output)
 
     return graph
 
