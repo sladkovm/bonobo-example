@@ -10,6 +10,7 @@ requests-cache = "*"
 strava-flyby = "*"
 
 [dev-packages]
+ipython = "*"
 
 [requires]
 python_version = "3.6"
