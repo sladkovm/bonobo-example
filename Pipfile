@@ -8,6 +8,7 @@ bonobo = "*"
 requests = "*"
 requests-cache = "*"
 strava-flyby = "*"
+stravalib = "*"
 
 [dev-packages]
 ipython = "*"

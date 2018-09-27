@@ -42,6 +42,10 @@ def extract_power(id):
         yield p
 
 
+def extract_power_ids(p):
+    yield p['activity_id']
+
+
 def get_graph(**options):
     """
     This function builds the graph that needs to be executed.
@@ -66,9 +70,12 @@ def get_graph(**options):
     trunk['power'] = graph.add_chain(retrieve_power, _input=trunk['ids'].output)
     trunk['print power'] = graph.add_chain(bonobo.PrettyPrinter(),
                                            _input=trunk['power'].output)
+    trunk['power ids'] = graph.add_chain(extract_power_ids,
+                                           _input=trunk['power'].output)
     trunk['json power'] = graph.add_chain(bonobo.JsonWriter('flyby-power.json'),
                                              _input=trunk['power'].output)
-
+    trunk['json power ids'] = graph.add_chain(bonobo.JsonWriter('flyby-power-ids.json'),
+                                             _input=trunk['power ids'].output)
     return graph
 
 
