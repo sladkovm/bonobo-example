@@ -249,6 +249,39 @@ class Power():
         return math.fsum(self.time_in_zone)
 
 
+def combine(data_path=None):
+    """Return results json from activity and power data"""
+    RESULTS_PATH = os.path.join(data_path, 'results')
+    POWER_COLUMNS = ['id',
+                     'athlete_ftp',
+                     'athlete_weight',
+                     'relative_intensity',
+                     'training_load',
+                     'max_watts',
+                     'weighted_power',
+                     'moving_time']
+
+    df = pd.DataFrame(power)
+    df = df[POWER_COLUMNS]
+
+    df = (df[(pd.notnull(df.athlete_ftp)
+              & pd.notnull(df.athlete_weight)
+              & (df.athlete_weight > 0.0))]
+          .sort_values('elapsed_time')
+          .reset_index(drop=True))
+
+    df['nwpk'] = df['weighted_power'] / df['athlete_weight']
+    df['mwpk'] = df['max_watts'] / df['athlete_weight']
+    df['ftppk'] = df['athlete_ftp'] / df['athlete_weight']
+
+    df['nwpk'] = df['nwpk'].replace([np.inf, -np.inf], np.nan).replace([0], np.nan)
+    df['mwpk'] = df['mwpk'].replace([np.inf, -np.inf], np.nan).replace([0], np.nan)
+    df['ftppk'] = df['ftppk'].replace([np.inf, -np.inf], np.nan).replace([0], np.nan)
+
+    f_name = self.slug + '.json'
+    df.to_json(os.path.join(RESULTS_PATH, f_name), orient='records')
+
+
 # The __main__ block actually execute the graph.
 if __name__ == '__main__':
     verify_strava_cookies()
