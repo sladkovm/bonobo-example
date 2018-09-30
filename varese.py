@@ -6,8 +6,9 @@ import json
 import logging
 import math
 import time
+import numpy as np
 
-ACTIVITY_ID = 1861083433
+ACTIVITY_ID = 1813559518
 
 trunk = dict()
 
@@ -42,6 +43,23 @@ def extract_power(id):
         yield p
 
 
+def filter_power(p):
+    is_ftp = bool(p.get('athlete_ftp'))
+    is_weight = bool(p.get('athlete_weight'))
+    is_moving_time = bool(p.get('moving_time'))
+    if (is_ftp and is_weight and is_moving_time):
+        yield p
+
+
+def enrich_power(p):
+    """Run calculations on the power data"""
+    p.update({'nwpk': p['weighted_power'] / p['athlete_weight']})
+    p.update({'mwpk': p['max_watts'] / p['athlete_weight']})
+    p.update({'ftppk': p['athlete_ftp'] / p['athlete_weight']})
+    p.update({'elapsed_time': p.get('moving_time')})
+    yield p
+
+
 def extract_power_ids(p):
     yield p['activity_id']
 
@@ -58,24 +76,26 @@ def get_graph(**options):
     trunk['matches'] = graph.add_chain(extract_matches,
                                        _input=trunk['flyby'].output)
     trunk['filtered matches'] = graph.add_chain(filter_matches,
-                                             _input=trunk['matches'].output)
+                                                _input=trunk['matches'].output)
     trunk['json matches'] = graph.add_chain(bonobo.JsonWriter('matches.json'),
-                                             _input=trunk['filtered matches'].output)
+                                            _input=trunk['filtered matches'].output)
     trunk['ids'] = graph.add_chain(extract_ids,
                                    _input=trunk['filtered matches'].output)
     # trunk['print ids'] = graph.add_chain(bonobo.PrettyPrinter(),
     #                                      _input=trunk['ids'].output)
     trunk['json ids'] = graph.add_chain(bonobo.JsonWriter('flyby-ids.json'),
-                                             _input=trunk['ids'].output)
+                                        _input=trunk['ids'].output)
     trunk['power'] = graph.add_chain(retrieve_power, _input=trunk['ids'].output)
+    trunk['filtered power'] = graph.add_chain(filter_power, _input=trunk['power'].output)
+    trunk['enrich power'] = graph.add_chain(enrich_power, _input=trunk['filtered power'].output)
     trunk['print power'] = graph.add_chain(bonobo.PrettyPrinter(),
-                                           _input=trunk['power'].output)
+                                           _input=trunk['enrich power'].output)
     trunk['power ids'] = graph.add_chain(extract_power_ids,
-                                           _input=trunk['power'].output)
+                                         _input=trunk['enrich power'].output)
     trunk['json power'] = graph.add_chain(bonobo.JsonWriter('flyby-power.json'),
-                                             _input=trunk['power'].output)
+                                          _input=trunk['enrich power'].output)
     trunk['json power ids'] = graph.add_chain(bonobo.JsonWriter('flyby-power-ids.json'),
-                                             _input=trunk['power ids'].output)
+                                              _input=trunk['power ids'].output)
     return graph
 
 
@@ -109,6 +129,7 @@ def verify_strava_cookies(**kwargs):
 
     COOKIES = dict(
         _strava4_session=kwargs.get('_strava4_session', os.getenv('STRAVA4_SESSION')),
+        _strava_local_session=kwargs.get('_strava_local_session', os.getenv('STRAVA_LOCAL_SESSION')),
         _strava_cookie_banner='true'
     )
 
@@ -189,6 +210,7 @@ class Power():
         dict
         """
         rv = {
+            "id": self.activity_id,
             "activity_id": self.activity_id,
             "weighted_power": self.weighted_power,
             "training_load": self.training_load,
@@ -246,7 +268,10 @@ class Power():
 
     @property
     def moving_time(self):
-        return math.fsum(self.time_in_zone)
+        if self.content.get('athlete_ftp'):
+            return math.fsum(self.time_in_zone)
+        else:
+            return None
 
 
 def combine(data_path=None):
