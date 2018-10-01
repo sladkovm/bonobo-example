@@ -47,7 +47,11 @@ def filter_power(p):
     is_ftp = bool(p.get('athlete_ftp'))
     is_weight = bool(p.get('athlete_weight'))
     is_moving_time = bool(p.get('moving_time'))
-    if (is_ftp and is_weight and is_moving_time):
+    if is_moving_time:
+        is_moving_time_ok = bool(p.get('moving_time') > 2*3600)
+    else:
+        is_moving_time_ok = False
+    if (is_ftp and is_weight and is_moving_time and is_moving_time_ok):
         yield p
 
 
@@ -92,7 +96,7 @@ def get_graph(**options):
                                            _input=trunk['enrich power'].output)
     trunk['power ids'] = graph.add_chain(extract_power_ids,
                                          _input=trunk['enrich power'].output)
-    trunk['json power'] = graph.add_chain(bonobo.JsonWriter('flyby-power.json'),
+    trunk['json power'] = graph.add_chain(bonobo.JsonWriter('uci-gf-wc-varese-2018.json'),
                                           _input=trunk['enrich power'].output)
     trunk['json power ids'] = graph.add_chain(bonobo.JsonWriter('flyby-power-ids.json'),
                                               _input=trunk['power ids'].output)
