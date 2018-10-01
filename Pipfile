@@ -9,6 +9,7 @@ requests = "*"
 requests-cache = "*"
 strava-flyby = "*"
 stravalib = "*"
+"uboto3" = {git = "https://github.com/sladkovm/uboto3.git", editable = true}
 
 [dev-packages]
 ipython = "*"
