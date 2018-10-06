@@ -7,8 +7,11 @@ import logging
 import math
 import time
 import numpy as np
+from uboto3 import UBoto3
+
 
 ACTIVITY_ID = 1813559518
+s3 = UBoto3()
 
 trunk = dict()
 
@@ -37,8 +40,13 @@ def extract_ids(m):
 
 def extract_power(id):
     """Extract power"""
-    time.sleep(1)
-    p = retrieve_power(id)
+    if not s3.head_object("power-{}.json".format(id), Prefix="sh-power"):
+        time.sleep(1)
+        p = retrieve_power(id)
+        if p:
+            s3.upload_json("power-{}.json".format(id), Prefix="sh-power")
+    else:
+        p = s3.get_object("power-{}.json".format(id), Prefix="sh-power")
     if p:
         yield p
 
@@ -47,6 +55,7 @@ def filter_power(p):
     is_ftp = bool(p.get('athlete_ftp'))
     is_weight = bool(p.get('athlete_weight'))
     is_moving_time = bool(p.get('moving_time'))
+    print(p.get('moving_time'))
     if is_moving_time:
         is_moving_time_ok = bool(p.get('moving_time') > 2*3600)
     else:
